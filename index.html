@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SCP-RP Admin Logs (Static JS)</title>
+    <style>
+        body {
+            background-image: url("images/SCP-Logo.png");
+            background-size: cover;
+            background-color: rgb(139, 139, 139);
+            background-repeat: no-repeat;
+            background-attachment: scroll;
+            color: white;
+            font-family: sans-serif;
+            text-align: center;
+        }
+        div.container {
+            width: 700px;
+            margin: auto;
+            background: rgba(0,0,0,0.6);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .log-box {
+            background-color: #333;
+            border: 1px solid #555;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            text-align: left;
+            white-space: pre-wrap;
+        }
+        textarea {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>SCP-RP Admin Logs (Static JS)</h1>
+
+    <form id="logForm">
+        <input type="text" id="nameInput" placeholder="Name" required><br><br>
+        <input type="text" id="steamidInput" placeholder="SteamID" required><br><br>
+        <input type="text" id="punishmentInput" placeholder="Punishment" required><br><br>
+        <textarea id="evidenceInput" placeholder="Evidence" rows="4" required></textarea><br><br>
+        <button type="submit">Submit</button>
+    </form>
+
+    <p id="statusMessage"></p>
+
+    <h2>All Logs</h2>
+    <div id="logsContainer"></div>
+</div>
+
+<script>
+    const form = document.getElementById("logForm");
+    const status = document.getElementById("statusMessage");
+    const logsContainer = document.getElementById("logsContainer");
+
+    function loadLogs() {
+        const logs = JSON.parse(localStorage.getItem("scpLogs") || "[]");
+        logsContainer.innerHTML = "";
+        if (logs.length === 0) {
+            logsContainer.textContent = "No logs yet.";
+            return;
+        }
+        logs.forEach(log => {
+            const div = document.createElement("div");
+            div.classList.add("log-box");
+            div.textContent = 
+                `${log.date}\n` +
+                `Name: ${log.name}\n` +
+                `SteamID: ${log.steamid}\n` +
+                `Punishment: ${log.punishment}\n` +
+                `Evidence: ${log.evidence}\n` +
+                "------------------------------";
+            logsContainer.appendChild(div);
+        });
+    }
+
+    form.addEventListener("submit", e => {
+        e.preventDefault();
+
+        const name = document.getElementById("nameInput").value.trim();
+        const steamid = document.getElementById("steamidInput").value.trim();
+        const punishment = document.getElementById("punishmentInput").value.trim();
+        const evidence = document.getElementById("evidenceInput").value.trim();
+
+        if (!name || !steamid || !punishment || !evidence) {
+            status.textContent = "Please fill in all fields.";
+            return;
+        }
+
+        const newLog = {
+            date: new Date().toLocaleString(),
+            name,
+            steamid,
+            punishment,
+            evidence
+        };
+
+        const logs = JSON.parse(localStorage.getItem("scpLogs") || "[]");
+        logs.push(newLog);
+        localStorage.setItem("scpLogs", JSON.stringify(logs));
+
+        status.textContent = "Log saved!";
+        form.reset();
+        loadLogs();
+    });
+
+    // Load logs on page load
+    loadLogs();
+</script>
+
+</body>
+</html>
