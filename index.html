@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCP-RP Admin Logs</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/x-icon" href="/images/SCP-Logo.ico">
+</head>
+<body style="background-color: #333; color: white; text-align: center;">
+    <h1>SCP-RP Admin Logs</h1>
+
+    <form id="logForm">
+        <input type="text" name="name" id="nameInput" placeholder="Name" required><br><br>
+        <input type="text" name="steamid" id="steamidInput" placeholder="SteamID" required><br><br>
+        <input type="text" name="punishment" id="punishmentInput" placeholder="Punishment" required><br><br>
+        <textarea name="evidence" id="evidenceInput" placeholder="Evidence" rows="4" cols="50" required></textarea><br><br>
+        <button type="submit">Submit</button>
+    </form>
+
+<p id="statusMessage"></p>
+
+
+    <p id="statusMessage"></p>
+
+    <script>
+    document.getElementById("logForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+
+        const formData = new FormData();
+        formData.append("name", document.getElementById("nameInput").value);
+        formData.append("steamid", document.getElementById("steamidInput").value);
+        formData.append("punishment", document.getElementById("punishmentInput").value);
+        formData.append("evidence", document.getElementById("evidenceInput").value);
+
+        fetch("save.php", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.text())
+        .then(result => {
+            document.getElementById("statusMessage").textContent = result;
+            document.getElementById("logForm").reset(); // clear inputs
+        })
+        .catch(error => {
+            document.getElementById("statusMessage").textContent = "Error saving log.";
+        });
+    });
+    </script>
+    
+    <p><a href="logs.php" style="color: lightblue;">View All Logs</a></p>
+
+
+</body>
+</html>
