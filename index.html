@@ -42,12 +42,31 @@
             border: none;
         }
         summary {
-        padding: 4px;
-        width: 200px;
-        background-color: #33333362;
-        border: none;
-        box-shadow: 1px 1px 2px #bbbbbb;
-        cursor: pointer;
+            padding: 4px;
+            width: 200px;
+            background-color: #33333362;
+            border: none;
+            box-shadow: 1px 1px 2px #bbbbbb;
+            cursor: pointer;
+        }
+        button.delete-btn {
+            margin-top: 10px;
+            padding: 5px 10px;
+            cursor: pointer;
+            background-color: #bb4444;
+            border: none;
+            color: white;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        button.delete-btn:hover {
+            background-color: #cc5555;
+        }
+        a.highlight-link {
+            color: #49aaff;
+            font-weight: bold;
+            text-decoration: underline;
+            cursor: pointer;
         }
     </style>
     <link rel="icon" type="image/x-icon" href="images/SCP-Logo.ico">
@@ -58,11 +77,25 @@
     <h1 style="color: #1373aa;"><strong><u>SCP-RP Admin Logs</u></strong></h1>
     <p style="color: #505050;">Made By Neosis/Ginger</p>
 
+    <details>
+        <summary>Helpful Guides/Tips!</summary>
+        <ul>
+            <li>To upload actual video files so that they can be stored for future reference, simply download the clip then upload it to Microsoft OneDrive then right click your newly uploaded file and hit embed; there should be a pop-up that says generate embed do that then copy the specific area called SRC - make sure not to copy the quotes, and only the inside part which should look something like: https://1drv.ms/v/c/e34da1a1....</li>
+            <br>
+            <li>To download from medal have your clip open then press the three little dots directly below the fullscreen button, after it opens a seperate window click the three dots again (this time it's vertical) then you should be able to find a download button!</li>
+            <br>
+            <li>Use Imgur to save in-game logs for future reference!</li>
+        </ul>
+    </details>
+
+    <p style="font-size: x-large;"></p>------------------------------------------------------------------------------------------------------------<br></p>
+
     <form id="logForm">
         <input type="text" id="nameInput" placeholder="Name" required><br><br>
         <input type="text" id="steamidInput" placeholder="SteamID" required><br><br>
         <input type="text" id="punishmentInput" placeholder="Punishment Type" required><br><br>
         <textarea id="evidenceInput" placeholder="Evidence" rows="3" required></textarea><br><br>
+        <input type="text" id="videoInput" placeholder="OneDrive Video Evidence (optional, but recommended)"><br><br>
         <button type="submit" style="padding: 3px; font-size: large;">Submit</button>
     </form>
 
@@ -84,6 +117,17 @@
     const logsContainer = document.getElementById("logsContainer");
     const searchInput = document.getElementById("searchInput");
 
+    // Utility function to convert Imgur or Medal.tv links in text to clickable links
+    function highlightLinks(text) {
+        // Regex to find Imgur or Medal.tv URLs
+        const urlRegex = /(https?:\/\/(www\.)?(imgur\.com|medal\.tv)[^\s]*)/gi;
+
+        // Replace URLs with anchor tags
+        return text.replace(urlRegex, url => {
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="highlight-link">${url}</a>`;
+        });
+    }
+
     function loadLogs(filter = "") {
         const logs = JSON.parse(localStorage.getItem("scpLogs") || "[]");
         logsContainer.innerHTML = "";
@@ -104,13 +148,65 @@
         filteredLogs.forEach(log => {
             const div = document.createElement("div");
             div.classList.add("log-box");
-            div.textContent = 
-                `${log.date}\n` +
-                `Name: ${log.name}\n` +
-                `SteamID: ${log.steamid}\n` +
-                `Punishment Type: ${log.punishment}\n` +
-                `Evidence:\n${log.evidence}\n` +
-                "------------------------------";
+
+            // Clear any previous content before adding new formatted content
+            div.innerHTML = `
+                ${log.date}<br>
+                <strong>Name:</strong> ${log.name}<br>
+                <strong>SteamID:</strong> ${log.steamid}<br>
+                <strong>Punishment Type:</strong> ${log.punishment}<br>
+                <strong>Evidence:</strong><br> ${highlightLinks(log.evidence).replace(/\n/g, "<br>")}<br>
+                ------------------------------
+            `;
+
+            // Delete button
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "Delete";
+            deleteBtn.className = "delete-btn";
+            deleteBtn.addEventListener("click", () => {
+                const allLogs = JSON.parse(localStorage.getItem("scpLogs") || "[]");
+                const logIndex = allLogs.findIndex(l =>
+                    l.date === log.date &&
+                    l.steamid === log.steamid &&
+                    l.name === log.name
+                );
+                if (logIndex > -1) {
+                    allLogs.splice(logIndex, 1);
+                    localStorage.setItem("scpLogs", JSON.stringify(allLogs));
+                    loadLogs(searchInput.value);
+                    status.textContent = "Log deleted!";
+                }
+            });
+
+            div.appendChild(document.createElement("br"));
+            div.appendChild(deleteBtn);
+
+            // If video link exists, display as clickable link if Imgur/Medal.tv, else iframe
+            if (log.video) {
+                div.appendChild(document.createElement("br"));
+
+                if (/^(https?:\/\/(www\.)?(imgur\.com|medal\.tv))/.test(log.video.toLowerCase())) {
+                    // Show clickable link for Imgur or Medal.tv
+                    const link = document.createElement("a");
+                    link.href = log.video;
+                    link.target = "_blank";
+                    link.rel = "noopener noreferrer";
+                    link.textContent = "Watch Video Evidence";
+                    link.className = "highlight-link";
+                    div.appendChild(link);
+                } else {
+                    // Otherwise, embed video in iframe (like OneDrive embed link)
+                    const iframe = document.createElement("iframe");
+                    iframe.src = log.video;
+                    iframe.width = "100%";
+                    iframe.height = "300px";
+                    iframe.frameBorder = "0";
+                    iframe.allow = "autoplay; fullscreen";
+                    iframe.allowFullscreen = true;
+                    div.appendChild(iframe);
+                }
+            }
+
             logsContainer.appendChild(div);
         });
     }
@@ -122,9 +218,10 @@
         const steamid = document.getElementById("steamidInput").value.trim();
         const punishment = document.getElementById("punishmentInput").value.trim();
         const evidence = document.getElementById("evidenceInput").value.trim();
+        const video = document.getElementById("videoInput").value.trim();
 
         if (!name || !steamid || !punishment || !evidence) {
-            status.textContent = "Please fill in all fields.";
+            status.textContent = "Please fill in all required fields.";
             return;
         }
 
@@ -133,7 +230,8 @@
             name,
             steamid,
             punishment,
-            evidence
+            evidence,
+            video
         };
 
         const logs = JSON.parse(localStorage.getItem("scpLogs") || "[]");
