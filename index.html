@@ -6,28 +6,29 @@
         body {
             background-image: url("images/SCP-Logo.png");
             background-size: cover;
-            background-color: rgb(139, 139, 139);
+            background-color: rgb(255, 255, 255);
             background-repeat: no-repeat;
             background-attachment: fixed;
             color: white;
-            font-family: sans-serif;
+            font-family: Times New Roman;
             text-align: center;
         }
         div.container {
             width: 700px;
             margin: auto;
-            background: rgba(0,0,0,0.6);
+            background: rgba(0, 0, 0, 0.6);
             padding: 20px;
             border-radius: 10px;
         }
         .log-box {
             background-color: #333;
-            border: 1px solid #555;
+            border: 1px solid #000000;
             padding: 15px;
             margin-bottom: 15px;
             border-radius: 8px;
             text-align: left;
             white-space: pre-wrap;
+            word-wrap: break-word;
         }
         textarea, input[type="text"] {
             width: 100%;
@@ -40,27 +41,41 @@
             border-radius: 5px;
             border: none;
         }
+        summary {
+        padding: 4px;
+        width: 200px;
+        background-color: #33333362;
+        border: none;
+        box-shadow: 1px 1px 2px #bbbbbb;
+        cursor: pointer;
+        }
     </style>
+    <link rel="icon" type="image/x-icon" href="images/SCP-Logo.ico">
 </head>
 <body>
 
 <div class="container">
-    <h1>SCP-RP Admin Logs</h1>
+    <h1 style="color: #1373aa;"><strong><u>SCP-RP Admin Logs</u></strong></h1>
+    <p style="color: #505050;">Made By Neosis/Ginger</p>
 
     <form id="logForm">
         <input type="text" id="nameInput" placeholder="Name" required><br><br>
         <input type="text" id="steamidInput" placeholder="SteamID" required><br><br>
-        <input type="text" id="punishmentInput" placeholder="Punishment" required><br><br>
-        <textarea id="evidenceInput" placeholder="Evidence" rows="4" required></textarea><br><br>
-        <button type="submit">Submit</button>
+        <input type="text" id="punishmentInput" placeholder="Punishment Type" required><br><br>
+        <textarea id="evidenceInput" placeholder="Evidence" rows="3" required></textarea><br><br>
+        <button type="submit" style="padding: 3px; font-size: large;">Submit</button>
     </form>
 
     <p id="statusMessage"></p>
 
-    <input type="text" id="searchInput" placeholder="Search by Name or SteamID">
+    <p style="font-size: x-large;"></p>------------------------------------------------------------------------------------------------------------<br></p>
 
-    <h2>All Logs</h2>
-    <div id="logsContainer"></div>
+    <input type="text" id="searchInput" placeholder="Search by Name or SteamID">
+    <h2 style="text-align: left;"><u>All Logs</u></h2>
+    <details>
+        <summary>Show/Hide</summary>
+        <div id="logsContainer"></div>
+    </details>
 </div>
 
 <script>
@@ -93,8 +108,8 @@
                 `${log.date}\n` +
                 `Name: ${log.name}\n` +
                 `SteamID: ${log.steamid}\n` +
-                `Punishment: ${log.punishment}\n` +
-                `Evidence: ${log.evidence}\n` +
+                `Punishment Type: ${log.punishment}\n` +
+                `Evidence:\n${log.evidence}\n` +
                 "------------------------------";
             logsContainer.appendChild(div);
         });
