@@ -29,6 +29,7 @@
             text-align: left;
             white-space: pre-wrap;
             word-wrap: break-word;
+            position: relative;
         }
         textarea, input[type="text"] {
             width: 100%;
@@ -50,7 +51,9 @@
             cursor: pointer;
         }
         button.delete-btn {
-            margin-top: 10px;
+            position: absolute;
+            top: 10px;
+            right: 10px;
             padding: 5px 10px;
             cursor: pointer;
             background-color: #bb4444;
@@ -63,10 +66,10 @@
             background-color: #cc5555;
         }
         a.highlight-link {
-            color: #49aaff;
-            font-weight: bold;
+            color: #66ccff;
             text-decoration: underline;
-            cursor: pointer;
+            display: block;
+            margin: 8px 0;
         }
     </style>
     <link rel="icon" type="image/x-icon" href="images/SCP-Logo.ico">
@@ -80,26 +83,25 @@
     <details>
         <summary>Helpful Guides/Tips!</summary>
         <ul>
-            <li>To upload actual video files so that they can be stored for future reference, simply download the clip then upload it to Microsoft OneDrive then right click your newly uploaded file and hit embed; there should be a pop-up that says generate embed—do that then copy the link!</li>
-            <br>
-            <li>Use Imgur to save in-game logs for future reference!</li>
+            <li>To upload actual video files for storage, upload to OneDrive, right-click, and use the "Embed" option. Copy the link.</li>
+            <li>Use Imgur for in-game screenshot logs and Medal.tv for quick video captures.</li>
         </ul>
     </details>
 
-    <p style="font-size: x-large;"></p>------------------------------------------------------------------------------------------------------------<br></p>
+    <hr style="margin: 20px 0;">
 
     <form id="logForm">
         <input type="text" id="nameInput" placeholder="Name" required><br><br>
         <input type="text" id="steamidInput" placeholder="SteamID" required><br><br>
         <input type="text" id="punishmentInput" placeholder="Punishment Type" required><br><br>
         <textarea id="evidenceInput" placeholder="Evidence" rows="3" required></textarea><br><br>
-        <textarea id="videoInput" placeholder="Paste OneDrive/Medal/Imgur video links - optional, but recommended (one per line)" rows="3"></textarea><br><br>
+        <textarea id="videoInput" placeholder="Paste OneDrive/Imgur/Medal links (one per line)" rows="3"></textarea><br><br>
         <button type="submit" style="padding: 3px; font-size: large;">Submit</button>
     </form>
 
     <p id="statusMessage"></p>
 
-    <p style="font-size: x-large;"></p>------------------------------------------------------------------------------------------------------------<br></p>
+    <hr style="margin: 20px 0;">
 
     <input type="text" id="searchInput" placeholder="Search by Name or SteamID">
     <h2 style="text-align: left;"><u>All Logs</u></h2>
@@ -114,13 +116,6 @@
     const status = document.getElementById("statusMessage");
     const logsContainer = document.getElementById("logsContainer");
     const searchInput = document.getElementById("searchInput");
-
-    function highlightLinks(text) {
-        const urlRegex = /(https?:\/\/(www\.)?(imgur\.com|medal\.tv)[^\s]*)/gi;
-        return text.replace(urlRegex, url => {
-            return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="highlight-link">${url}</a>`;
-        });
-    }
 
     function loadLogs(filter = "") {
         const logs = JSON.parse(localStorage.getItem("scpLogs") || "[]");
@@ -140,53 +135,55 @@
         }
 
         filteredLogs.forEach(log => {
-            const div = document.createElement("div");
-            div.classList.add("log-box");
-
-            // Convert old logs to support multiple videos
+            // Handle old format
             if (!log.videos && log.video) {
                 log.videos = [log.video];
             }
 
-            div.innerHTML = `
-                ${log.date}<br>
-                <strong>Name:</strong> ${log.name}<br>
-                <strong>SteamID:</strong> ${log.steamid}<br>
-                <strong>Punishment Type:</strong> ${log.punishment}<br>
-                <strong>Evidence:</strong><br> ${highlightLinks(log.evidence).replace(/\n/g, "<br>")}<br>
-                <strong>Onedrive Saved Videos:</strong><br>
-            `;
+            const div = document.createElement("div");
+            div.classList.add("log-box");
+
+            const content = 
+                `${log.date}\n` +
+                `Name: ${log.name}\n` +
+                `SteamID: ${log.steamid}\n` +
+                `Punishment Type: ${log.punishment}\n` +
+                `Evidence:\n${log.evidence}\n` +
+                "Onedrive Saved Videos:";
+            div.textContent = content;
 
             const deleteBtn = document.createElement("button");
             deleteBtn.textContent = "Delete";
             deleteBtn.className = "delete-btn";
             deleteBtn.addEventListener("click", () => {
                 const allLogs = JSON.parse(localStorage.getItem("scpLogs") || "[]");
-                const logIndex = allLogs.findIndex(l =>
+                const index = allLogs.findIndex(l =>
                     l.date === log.date &&
                     l.steamid === log.steamid &&
                     l.name === log.name
                 );
-                if (logIndex > -1) {
-                    allLogs.splice(logIndex, 1);
+                if (index > -1) {
+                    allLogs.splice(index, 1);
                     localStorage.setItem("scpLogs", JSON.stringify(allLogs));
                     loadLogs(searchInput.value);
                     status.textContent = "Log deleted!";
                 }
             });
-
-            div.appendChild(document.createElement("br"));
             div.appendChild(deleteBtn);
 
             if (Array.isArray(log.videos)) {
                 log.videos.forEach(videoURL => {
+                    videoURL = videoURL.trim();
+                    if (!videoURL) return;
+
                     div.appendChild(document.createElement("br"));
-                    if (/^(https?:\/\/(www\.)?(imgur\.com|medal\.tv))/.test(videoURL.toLowerCase())) {
+
+                    if (/imgur\.com|medal\.tv/.test(videoURL.toLowerCase())) {
                         const link = document.createElement("a");
                         link.href = videoURL;
                         link.target = "_blank";
                         link.rel = "noopener noreferrer";
-                        link.textContent = "Watch Video Evidence";
+                        link.textContent = "Open Link";
                         link.className = "highlight-link";
                         div.appendChild(link);
                     } else {
@@ -222,8 +219,8 @@
 
         const videos = rawVideos
             .split(/\n|,/)
-            .map(v => v.trim())
-            .filter(v => v.length > 0);
+            .map(link => link.trim())
+            .filter(link => link);
 
         const newLog = {
             date: new Date().toLocaleString(),
@@ -247,7 +244,6 @@
         loadLogs(searchInput.value);
     });
 
-    // Initial load
     loadLogs();
 </script>
 
