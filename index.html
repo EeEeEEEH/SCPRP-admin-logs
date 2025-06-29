@@ -80,9 +80,7 @@
     <details>
         <summary>Helpful Guides/Tips!</summary>
         <ul>
-            <li>To upload actual video files so that they can be stored for future reference, simply download the clip then upload it to Microsoft OneDrive then right click your newly uploaded file and hit embed; there should be a pop-up that says generate embed do that then copy the specific area called SRC - make sure not to copy the quotes, and only the inside part which should look something like: https://1drv.ms/v/c/e34da1a1....</li>
-            <br>
-            <li>To download from medal have your clip open then press the three little dots directly below the fullscreen button, after it opens a seperate window click the three dots again (this time it's vertical) then you should be able to find a download button!</li>
+            <li>To upload actual video files so that they can be stored for future reference, simply download the clip then upload it to Microsoft OneDrive then right click your newly uploaded file and hit embed; there should be a pop-up that says generate embed—do that then copy the link!</li>
             <br>
             <li>Use Imgur to save in-game logs for future reference!</li>
         </ul>
@@ -95,7 +93,7 @@
         <input type="text" id="steamidInput" placeholder="SteamID" required><br><br>
         <input type="text" id="punishmentInput" placeholder="Punishment Type" required><br><br>
         <textarea id="evidenceInput" placeholder="Evidence" rows="3" required></textarea><br><br>
-        <input type="text" id="videoInput" placeholder="OneDrive Video Evidence (optional, but recommended)"><br><br>
+        <textarea id="videoInput" placeholder="Paste OneDrive/Medal/Imgur video links (one per line)" rows="3"></textarea><br><br>
         <button type="submit" style="padding: 3px; font-size: large;">Submit</button>
     </form>
 
@@ -117,12 +115,8 @@
     const logsContainer = document.getElementById("logsContainer");
     const searchInput = document.getElementById("searchInput");
 
-    // Utility function to convert Imgur or Medal.tv links in text to clickable links
     function highlightLinks(text) {
-        // Regex to find Imgur or Medal.tv URLs
         const urlRegex = /(https?:\/\/(www\.)?(imgur\.com|medal\.tv)[^\s]*)/gi;
-
-        // Replace URLs with anchor tags
         return text.replace(urlRegex, url => {
             return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="highlight-link">${url}</a>`;
         });
@@ -149,7 +143,11 @@
             const div = document.createElement("div");
             div.classList.add("log-box");
 
-            // Clear any previous content before adding new formatted content
+            // Convert old logs to support multiple videos
+            if (!log.videos && log.video) {
+                log.videos = [log.video];
+            }
+
             div.innerHTML = `
                 ${log.date}<br>
                 <strong>Name:</strong> ${log.name}<br>
@@ -159,7 +157,6 @@
                 ------------------------------
             `;
 
-            // Delete button
             const deleteBtn = document.createElement("button");
             deleteBtn.textContent = "Delete";
             deleteBtn.className = "delete-btn";
@@ -181,30 +178,28 @@
             div.appendChild(document.createElement("br"));
             div.appendChild(deleteBtn);
 
-            // If video link exists, display as clickable link if Imgur/Medal.tv, else iframe
-            if (log.video) {
-                div.appendChild(document.createElement("br"));
-
-                if (/^(https?:\/\/(www\.)?(imgur\.com|medal\.tv))/.test(log.video.toLowerCase())) {
-                    // Show clickable link for Imgur or Medal.tv
-                    const link = document.createElement("a");
-                    link.href = log.video;
-                    link.target = "_blank";
-                    link.rel = "noopener noreferrer";
-                    link.textContent = "Watch Video Evidence";
-                    link.className = "highlight-link";
-                    div.appendChild(link);
-                } else {
-                    // Otherwise, embed video in iframe (like OneDrive embed link)
-                    const iframe = document.createElement("iframe");
-                    iframe.src = log.video;
-                    iframe.width = "100%";
-                    iframe.height = "300px";
-                    iframe.frameBorder = "0";
-                    iframe.allow = "autoplay; fullscreen";
-                    iframe.allowFullscreen = true;
-                    div.appendChild(iframe);
-                }
+            if (Array.isArray(log.videos)) {
+                log.videos.forEach(videoURL => {
+                    div.appendChild(document.createElement("br"));
+                    if (/^(https?:\/\/(www\.)?(imgur\.com|medal\.tv))/.test(videoURL.toLowerCase())) {
+                        const link = document.createElement("a");
+                        link.href = videoURL;
+                        link.target = "_blank";
+                        link.rel = "noopener noreferrer";
+                        link.textContent = "Watch Video Evidence";
+                        link.className = "highlight-link";
+                        div.appendChild(link);
+                    } else {
+                        const iframe = document.createElement("iframe");
+                        iframe.src = videoURL;
+                        iframe.width = "100%";
+                        iframe.height = "300px";
+                        iframe.frameBorder = "0";
+                        iframe.allow = "autoplay; fullscreen";
+                        iframe.allowFullscreen = true;
+                        div.appendChild(iframe);
+                    }
+                });
             }
 
             logsContainer.appendChild(div);
@@ -218,12 +213,17 @@
         const steamid = document.getElementById("steamidInput").value.trim();
         const punishment = document.getElementById("punishmentInput").value.trim();
         const evidence = document.getElementById("evidenceInput").value.trim();
-        const video = document.getElementById("videoInput").value.trim();
+        const rawVideos = document.getElementById("videoInput").value.trim();
 
         if (!name || !steamid || !punishment || !evidence) {
             status.textContent = "Please fill in all required fields.";
             return;
         }
+
+        const videos = rawVideos
+            .split(/\n|,/)
+            .map(v => v.trim())
+            .filter(v => v.length > 0);
 
         const newLog = {
             date: new Date().toLocaleString(),
@@ -231,7 +231,7 @@
             steamid,
             punishment,
             evidence,
-            video
+            videos
         };
 
         const logs = JSON.parse(localStorage.getItem("scpLogs") || "[]");
@@ -247,7 +247,7 @@
         loadLogs(searchInput.value);
     });
 
-    // Load logs on page load
+    // Initial load
     loadLogs();
 </script>
 
