@@ -150,7 +150,9 @@
                 `Punishment Type: ${log.punishment}\n` +
                 `Evidence:\n${log.evidence}\n` +
                 "Onedrive Saved Videos:";
-            div.textContent = content;
+
+            // Replace imgur.com and medal.tv URLs in Evidence with clickable links
+            div.innerHTML = content.replace(/(https?:\/\/(?:www\.)?(imgur\.com|medal\.tv)\/[^\s]+)/gi, '<a href="$1" target="_blank" class="highlight-link">$1</a>');
 
             const deleteBtn = document.createElement("button");
             deleteBtn.textContent = "Delete";
@@ -246,6 +248,7 @@
 
     loadLogs();
 </script>
+
 
 </body>
 </html>
