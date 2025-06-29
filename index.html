@@ -93,7 +93,7 @@
         <input type="text" id="steamidInput" placeholder="SteamID" required><br><br>
         <input type="text" id="punishmentInput" placeholder="Punishment Type" required><br><br>
         <textarea id="evidenceInput" placeholder="Evidence" rows="3" required></textarea><br><br>
-        <textarea id="videoInput" placeholder="Paste OneDrive/Medal/Imgur video links (one per line)" rows="3"></textarea><br><br>
+        <textarea id="videoInput" placeholder="Paste OneDrive/Medal/Imgur video links - optional, but recommended (one per line)" rows="3"></textarea><br><br>
         <button type="submit" style="padding: 3px; font-size: large;">Submit</button>
     </form>
 
@@ -154,7 +154,6 @@
                 <strong>SteamID:</strong> ${log.steamid}<br>
                 <strong>Punishment Type:</strong> ${log.punishment}<br>
                 <strong>Evidence:</strong><br> ${highlightLinks(log.evidence).replace(/\n/g, "<br>")}<br>
-                ------------------------------
             `;
 
             const deleteBtn = document.createElement("button");
