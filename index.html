@@ -31,12 +31,12 @@
             word-wrap: break-word;
             position: relative;
         }
-        textarea, input[type="text"] {
+        textarea, input[type="text"], select {
             width: 100%;
             box-sizing: border-box;
         }
-        #searchInput {
-            margin: 20px 0;
+        #searchInput, #punishmentTypeFilter {
+            margin: 20px 0 10px;
             padding: 8px;
             font-size: 16px;
             border-radius: 5px;
@@ -71,6 +71,12 @@
             display: block;
             margin: 8px 0;
         }
+        .subtitle {
+            color: #99ccff;
+            font-style: italic;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
     </style>
     <link rel="icon" type="image/x-icon" href="images/SCP-Logo.ico">
 </head>
@@ -83,7 +89,7 @@
     <details>
         <summary>Helpful Guides/Tips!</summary>
         <ul>
-            <li>To upload actual video files for storage, upload to OneDrive, right-click, and use the "Embed" option. Copy the link.</li>
+            <li>To upload actual video files for storage, upload to OneDrive, right-click, and use the "Embed" option. Copy the link within SRC="...", it should look something like: https://1drv.ms/v/c/e34da1...</li>
             <li>Use Imgur for in-game screenshot logs and Medal.tv for quick video captures.</li>
         </ul>
     </details>
@@ -93,15 +99,33 @@
     <form id="logForm">
         <input type="text" id="nameInput" placeholder="Name" required><br><br>
         <input type="text" id="steamidInput" placeholder="SteamID" required><br><br>
-        <input type="text" id="punishmentInput" placeholder="Punishment Type" required><br><br>
+        <input type="text" id="punishmentInput" placeholder="Punishment" required><br><br>
+        
+        <!-- Quick Note dropdown -->
+        <select id="punishmentTypeInput" required>
+            <option value="" selected>-- Punishment Type --</option>
+            <option value="Verbal">Verbal</option>
+            <option value="Warn">Warn</option>
+            <option value="Ban">Ban</option>
+        </select>
+        <br><br>
+        
         <textarea id="evidenceInput" placeholder="Evidence" rows="3" required></textarea><br><br>
-        <textarea id="videoInput" placeholder="Paste OneDrive/Imgur/Medal links (one per line)" rows="3"></textarea><br><br>
+        <textarea id="videoInput" placeholder="Paste OneDrive links, optional but recommended (one per line)" rows="3"></textarea><br><br>
         <button type="submit" style="padding: 3px; font-size: large;">Submit</button>
     </form>
 
     <p id="statusMessage"></p>
 
     <hr style="margin: 20px 0;">
+
+    <!-- Quick Note filter -->
+    <select id="punishmentTypeFilter">
+        <option value="">Filter by Quick Note (All)</option>
+        <option value="Verbal">Verbal</option>
+        <option value="Warn">Warn</option>
+        <option value="Ban">Ban</option>
+    </select>
 
     <input type="text" id="searchInput" placeholder="Search by Name or SteamID">
     <h2 style="text-align: left;"><u>All Logs</u></h2>
@@ -116,17 +140,21 @@
     const status = document.getElementById("statusMessage");
     const logsContainer = document.getElementById("logsContainer");
     const searchInput = document.getElementById("searchInput");
+    const punishmentTypeFilter = document.getElementById("punishmentTypeFilter");
 
-    function loadLogs(filter = "") {
+    function loadLogs(searchFilter = "", punishmentTypeFilterVal = "") {
         const logs = JSON.parse(localStorage.getItem("scpLogs") || "[]");
         logsContainer.innerHTML = "";
 
         const filteredLogs = logs.filter(log => {
-            const search = filter.toLowerCase();
-            return (
+            const search = searchFilter.toLowerCase();
+            const matchesSearch =
                 log.name.toLowerCase().includes(search) ||
-                log.steamid.toLowerCase().includes(search)
-            );
+                log.steamid.toLowerCase().includes(search);
+
+            const matchespunishmentType = punishmentTypeFilterVal === "" || (log.punishmentType || "") === punishmentTypeFilterVal;
+
+            return matchesSearch && matchespunishmentType;
         });
 
         if (filteredLogs.length === 0) {
@@ -143,16 +171,24 @@
             const div = document.createElement("div");
             div.classList.add("log-box");
 
+            // Quick Note subtitle at top if present
+            if (log.punishmentType) {
+                const noteDiv = document.createElement("div");
+                noteDiv.classList.add("subtitle");
+                noteDiv.textContent = `Punishment Type: ${log.punishmentType}`;
+                div.appendChild(noteDiv);
+            }
+
             const content = 
                 `${log.date}\n` +
                 `Name: ${log.name}\n` +
                 `SteamID: ${log.steamid}\n` +
-                `Punishment Type: ${log.punishment}\n` +
+                `Punishment: ${log.punishment}\n` +
                 `Evidence:\n${log.evidence}\n` +
                 "Onedrive Saved Videos:";
 
             // Replace imgur.com and medal.tv URLs in Evidence with clickable links
-            div.innerHTML = content.replace(/(https?:\/\/(?:www\.)?(imgur\.com|medal\.tv)\/[^\s]+)/gi, '<a href="$1" target="_blank" class="highlight-link">$1</a>');
+            div.innerHTML += content.replace(/(https?:\/\/(?:www\.)?(imgur\.com|medal\.tv)\/[^\s]+)/gi, '<a href="$1" target="_blank" class="highlight-link">$1</a>');
 
             const deleteBtn = document.createElement("button");
             deleteBtn.textContent = "Delete";
@@ -167,7 +203,7 @@
                 if (index > -1) {
                     allLogs.splice(index, 1);
                     localStorage.setItem("scpLogs", JSON.stringify(allLogs));
-                    loadLogs(searchInput.value);
+                    loadLogs(searchInput.value, punishmentTypeFilter.value);
                     status.textContent = "Log deleted!";
                 }
             });
@@ -211,6 +247,7 @@
         const name = document.getElementById("nameInput").value.trim();
         const steamid = document.getElementById("steamidInput").value.trim();
         const punishment = document.getElementById("punishmentInput").value.trim();
+        const punishmentType = document.getElementById("punishmentTypeInput").value;
         const evidence = document.getElementById("evidenceInput").value.trim();
         const rawVideos = document.getElementById("videoInput").value.trim();
 
@@ -221,34 +258,38 @@
 
         const videos = rawVideos
             .split(/\n|,/)
-            .map(link => link.trim())
-            .filter(link => link);
+            .map(v => v.trim())
+            .filter(v => v.length > 0);
 
         const newLog = {
             date: new Date().toLocaleString(),
             name,
             steamid,
             punishment,
+            punishmentType: punishmentType || null,
             evidence,
             videos
         };
 
         const logs = JSON.parse(localStorage.getItem("scpLogs") || "[]");
-        logs.push(newLog);
+        logs.unshift(newLog);
         localStorage.setItem("scpLogs", JSON.stringify(logs));
-
-        status.textContent = "Log saved!";
+        status.textContent = "Log added successfully!";
         form.reset();
-        loadLogs(searchInput.value);
+        loadLogs(searchInput.value, punishmentTypeFilter.value);
     });
 
     searchInput.addEventListener("input", () => {
-        loadLogs(searchInput.value);
+        loadLogs(searchInput.value, punishmentTypeFilter.value);
     });
 
+    punishmentTypeFilter.addEventListener("change", () => {
+        loadLogs(searchInput.value, punishmentTypeFilter.value);
+    });
+
+    // Load logs on page load
     loadLogs();
 </script>
-
 
 </body>
 </html>
